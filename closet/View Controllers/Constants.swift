@@ -17,6 +17,11 @@ struct Constants {
         
     }
     
+    struct StoryboardTwo {
+        
+        static let shopViewController = "ShopVC"
+    }
+    
     
     
 }

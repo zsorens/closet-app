@@ -9,6 +9,7 @@
 import UIKit
 import FirebaseFirestore
 import FirebaseStorage
+import Firebase
 
 
 class DonateViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate  {
@@ -34,6 +35,7 @@ class DonateViewController: UIViewController, UIImagePickerControllerDelegate, U
     @IBOutlet weak var lbutton: UIButton!
     @IBOutlet weak var xlButton: UIButton!
     @IBOutlet weak var descriptionTextField: UITextField!
+    @IBOutlet weak var errorLabel: UILabel!
     @IBOutlet weak var donateButton: UIButton!
     
     // image variable
@@ -44,34 +46,18 @@ class DonateViewController: UIViewController, UIImagePickerControllerDelegate, U
     var itemType : String? = nil
     var fit : String? = nil
     var size: String? = nil
+    var otherDescription = "none"
+    var isNew = true
+    var savedBy = "none"
     
-    // creates a label that says "Select Size:"
-//    let sizeOptionLabel: UILabel = {
-//        let label = UILabel.init()
-//        label.text = "Select Size:"
-//        label.textColor = UIColor(red: 48/255, green: 173/255, blue: 99/255, alpha: 1)
-//        label.translatesAutoresizingMaskIntoConstraints = false
-//        return label
-//    }()
-    
-//    let sportTextField: UITextField = {
-//        let textField = UITextField.init()
-//        textField.placeholder = "Please type sport here"
-//        textField.translatesAutoresizingMaskIntoConstraints = false
-//        textField.borderStyle = UITextField.BorderStyle.line
-//        textField.font = UIFont.systemFont(ofSize: 10)
-//        textField.layer.borderColor = UIColor.lightGray.cgColor
-//        textField.layer.borderWidth = 0.25
-//        textField.layer.cornerRadius = 5.0
-//
-//        return textField
-//    }()
+    // public array of uids of data in firestore so I can use them in shop view
+    public var uidArray = [String]()
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setUpElements()
-
+        
         // Do any additional setup after loading the view.
     }
     
@@ -95,7 +81,9 @@ class DonateViewController: UIViewController, UIImagePickerControllerDelegate, U
         Utilities.styleHollowButtonDonatePageSize(xlButton)
         Utilities.styleDonateButton(donateButton)
         Utilities.styleFilledButtonDonatePage(takePhotoButton)
-        descriptionTextField.backgroundColor = UIColor.white
+       
+        Utilities.styleTextFieldTwo(descriptionTextField)
+        errorLabel.alpha = 0
     }
 
     
@@ -279,24 +267,114 @@ class DonateViewController: UIViewController, UIImagePickerControllerDelegate, U
         size = "XL"
     }
     
-    @IBAction func donateButtonTapped(_ sender: Any) {
-        
+    @IBAction func otherDescriptionTextEdited(_ sender: Any) {
+        otherDescription = descriptionTextField.text!
     }
     
     
+    @IBAction func donateButtonTapped(_ sender: Any) {
+        // check that the values have been filled in
+        if (itemType == nil) || (fit == nil) || (size == nil){
+            self.showError("Please make sure all fields have a selection.")
+            return
+        }
+        
+        // store jpeg representation of image in variable
+        guard let image = imageAImageView.image,
+            let data = image.jpegData(compressionQuality: 1.0)
+            else{
+                showError("Something went wrong.")
+                return
+        }
+        // get UUID and store it in storage
+        let imageName = UUID().uuidString
+        let imageReference = Storage.storage().reference().child("images").child(imageName)
+        
+        
+        imageReference.putData(data, metadata: nil) { (metadat, err) in
+            if let err = err {
+                self.showError(err.localizedDescription)
+                return
+            }
+            imageReference.downloadURL(completion: { (url, err) in
+                if let err = err {
+                    self.showError(err.localizedDescription)
+                    return
+                }
+                
+                guard let url = url else {
+                    self.showError("Soemthing went wrong.")
+                    return
+                }
+                
+                let dataReference = Firestore.firestore().collection("Item").document()
+                let documentUID = dataReference.documentID
+                self.uidArray.append(documentUID)                                       // add this uid to the array
+                let urlString = url.absoluteString
+                // storing all of the data in firestore
+                dataReference.setData([
+                    "Is New Item" : self.isNew, "Item Type" : self.itemType!, "Fit" : self.fit!, "Size" : self.size!, "Other Description" : self.otherDescription,  "UID" : documentUID, "imageURL" : urlString, "Saved by" : self.savedBy
+                ]) { (err) in
+                    if let err = err {
+                        self.showError(err.localizedDescription)
+                        return
+                    }
+                    // alert the user that they were successful
+                    let alert = UIAlertController(title: "Donation recieved!", message: "Thank you for donating.", preferredStyle: .alert)
+
+                    alert.addAction(UIAlertAction(title: "Okay", style: .default, handler: nil))
     
-    // @objc fileprivate func uploadPhoto() {
-        // activityIndicator.startAnimating()
-        // guard let image = imageAImageView.image, let data = image.jpegData(compressionQuality: 1.0)
-            // else{
-                // presentAlert(title: "Error", message: "Something went wrong.")
-                // return
-        // }
-        // let imageName = UUID().uuidString
-        // let imageReference = Storage.storage().reference().child(MyKeys.imagesFolder).child(imageName)
+                    self.present(alert, animated: true)
+                    self.clearFields()
+                    
+                    UserDefaults.standard.set(documentUID, forKey: "uid")       // the key might mess this up I am confused
+                    
+                
+                }
+                
+            })
+            
+        }
+
+        
+    }
+    
+    func clearFields(){
+        
+        self.imageAImageView.image = UIImage()
+        
+        Utilities.styleHollowButtonDonatePage(spiritWearButton)
+        Utilities.styleHollowButtonDonatePage(danceAttireButton)
+        Utilities.styleHollowButtonDonatePage(sportsItemButton)
+        Utilities.styleHollowButtonDonatePage(otherItemTypeButton)
+        itemType = nil
         
         
-    // }
+        Utilities.styleHollowButtonDonatePageFit(mensButton)
+        Utilities.styleHollowButtonDonatePageFit(womensButton)
+        Utilities.styleHollowButtonDonatePageFit(naButton)
+        fit = nil
+        
+        Utilities.styleHollowButtonDonatePageSize(lbutton)
+        Utilities.styleHollowButtonDonatePageSize(sButton)
+        Utilities.styleHollowButtonDonatePageSize(mButton)
+        Utilities.styleHollowButtonDonatePageSize(xsButton)
+        Utilities.styleHollowButtonDonatePageSize(xlButton)
+        size = nil
+        
+        otherDescription = "none"
+        descriptionTextField.text = nil
+        
+    }
+    
+    func showError(_ message: String){
+        
+        errorLabel.text = message
+        errorLabel.alpha = 1
+    }
+    
+    
+
     
     
 }

@@ -16,6 +16,11 @@ class Utilities {
         label.font = UIFont(name: "Avenir Next", size: 30.0)
         label.textColor = UIColor(red: 48/255, green: 173/255, blue: 99/255, alpha: 1)
     }
+    
+    static func styleShopEntryLabel(_ label : UILabel) {
+        label.font = UIFont(name: "Avenir Next", size: 17.0)
+        label.textColor = UIColor(red: 48/255, green: 173/255, blue: 99/255, alpha: 1)
+    }
     static func styleCategoryLabel(_ label: UILabel){
         label.font = UIFont.systemFont(ofSize: 15.0)
         label.textColor = UIColor(red: 48/255, green: 173/255, blue: 99/255, alpha: 1)
@@ -40,6 +45,19 @@ class Utilities {
         // Add the line to the text field
         textfield.layer.addSublayer(bottomLine)
         
+    }
+    
+    static func styleTextFieldTwo(_ textfield:UITextField) {
+        // these dont work i dont know why
+        textfield.borderStyle = .roundedRect
+        textfield.layer.borderColor = UIColor.init(red: 48/255, green: 173/255, blue: 99/255, alpha: 1).cgColor
+        textfield.attributedPlaceholder = NSAttributedString(string: textfield.placeholder!,
+                                                             attributes: [NSAttributedString.Key.foregroundColor: UIColor.init(red: 48/255, green: 173/255, blue: 99/255, alpha: 1)])
+        textfield.layer.borderWidth = 1.0
+        textfield.layer.cornerRadius = 5.0
+        textfield.textColor = UIColor.init(red: 48/255, green: 173/255, blue: 99/255, alpha: 1)
+        textfield.backgroundColor = UIColor.white
+    
     }
     
     static func styleFilledButton(_ button:UIButton) {
@@ -127,6 +145,16 @@ class Utilities {
         button.layer.cornerRadius = 20.0
         button.tintColor = UIColor.white
         button.setTitleColor(UIColor.white, for: UIControl.State.normal)
+    }
+    
+    static func styleFilledButtonShopEntryPage(_ button:UIButton) {
+        
+        // Filled rounded corner style
+        button.backgroundColor = UIColor.init(red: 48/255, green: 173/255, blue: 99/255, alpha: 1)
+        button.layer.cornerRadius = 15.0
+        button.tintColor = UIColor.white
+        button.setTitleColor(UIColor.white, for: UIControl.State.normal)
+
     }
     
     static func isPasswordValid(_ password : String) -> Bool {
